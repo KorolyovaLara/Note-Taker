@@ -9,78 +9,90 @@ module.exports = (app) => {
   // Should read the db.json file and return all saved notes as JSON
   app.get("/api/notes", (req, res) => {
     console.log("== Getting Notes ==");
-    fs.readFile("./db/db.json", "utf8", (err, data) => {
+    fs.readFile("db/db.json", "utf8", (err, data) => {
       if (err) throw err;
       let notes = JSON.parse(data);
       res.json(notes);
     });
   });
-  //Should receive a new note to save on the request body, add it to the db.json file, and then return the new note to the client
+
+  // Should receive a new note to save on the request body,
+  // And add it to the db.json file, and then return the new note to the client
   app.post("/api/notes", (req, res) => {
-    // notes req.body
-    let newNote = req.body;
-
     // read the notes from your db.js using fs readFile
-    // JSON.parse
-    let updateNoteArray = JSON.parse(fs.readFile("./db/db.json"));
+    fs.readFile("db/db.json", "utf8", (err, data) => {
+      if (err) throw err;
 
-    // validity check
-    if (!newNote.title || !newNote.text) {
-      return res.status(400).end();
-    }
+      // notes req.body
+      let newNote = req.body;
 
-    // create new unique id for the new note
-    newNote.id = uniqid();
-    updateNoteArray.push(newNote);
+      // JSON.parse
+      let updateNoteArray = JSON.parse(data);
 
-    // fs writeFile to write the new note into db.json JSON.stringify
-    fs.writeFileSync(
-      "./db/db.json",
-      JSON.stringify(updateNoteArray),
-      "utf8",
-      (err, data) => {
-        // return true or false, if its false you throw an error
-        if (err) throw err;
-        console.log("New note successfully added!");
+      // validity check
+      if (!newNote.title || !newNote.text) {
+        return res.status(400).end();
       }
-    );
 
-    // return new note
-    res.json(newNote);
+      // create new unique id for the new note
+      newNote.id = uniqid();
+      updateNoteArray.push(newNote);
+      console.log(newNote);
+
+      // fs writeFile to write the new note into db.json JSON.stringify
+      fs.writeFileSync(
+        "db/db.json",
+        JSON.stringify(updateNoteArray),
+        "utf8",
+        (err, data) => {
+          // return true or false, if its false you throw an error
+          if (err) throw err;
+          console.log("New note successfully added!");
+        }
+      );
+
+      // return new note
+      res.json(updateNoteArray);
+    });
   });
 
+  // Should receive a query parameter containing the id of a note to delete.
   app.delete("/api/notes/:id", (req, res) => {
-    // get notes from jsonfile using fs readFile and put in an array
-    let updateNoteArray = JSON.parse(fs.readFile("./db/db.json"));
+    fs.readFile("db/db.json", "utf8", (err, data) => {
+      if (err) throw err;
 
-    // get ID from request
-    let noteIndex = updateNoteArray.findIndex(
-      // loop through the notes to find the correct ID
-      (note) => note.id === req.params.id
-    );
+      // get notes from jsonfile using fs readFile and put in an array
+      let updateNoteArray = JSON.parse(data);
 
-    // return error code if ID not found
-    if (noteIndex < 0) {
-      return res.status(404).end();
-    }
+      // get ID from request
+      let noteIndex = updateNoteArray.findIndex(
+        // loop through the notes to find the correct ID
+        (note) => note.id === req.params.id
+      );
 
-    // matching ID remove the note from the array
-    let deletedNote = updateNoteArray[noteIndex];
-
-    // slice or splice to remove an element from array
-    updateNoteArray.splice(noteIndex, 1);
-
-    // write the array back to db.json
-    fs.writeFileSync(
-      "db/db.json",
-      JSON.stringify(updateNoteArray),
-      "utf8",
-      (err, data) => {
-        if (err) throw err;
-        console.log("Success!");
+      // return error code if ID not found
+      if (noteIndex < 0) {
+        return res.status(404).end();
       }
-    );
 
-    res.status(200).send(deletedNote);
+      // matching ID remove the note from the array
+      let deletedNote = updateNoteArray[noteIndex];
+
+      // slice or splice to remove an element from array
+      updateNoteArray.splice(noteIndex, 1);
+
+      // write the array back to db.json
+      fs.writeFileSync(
+        "db/db.json",
+        JSON.stringify(updateNoteArray),
+        "utf8",
+        (err, data) => {
+          if (err) throw err;
+          console.log("Success!");
+        }
+      );
+
+      res.status(200).send(deletedNote);
+    });
   });
 };
